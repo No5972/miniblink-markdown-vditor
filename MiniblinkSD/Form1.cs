@@ -13,6 +13,8 @@ using System.Drawing;
 using System.IO;
 using System.Threading;
 using System.Windows.Forms;
+using Microsoft.Win32;
+using RegistryUtils;
 // using Windows.UI.ViewManagement;
 using QQ2564874169.Miniblink;
 
@@ -27,6 +29,15 @@ namespace MiniblinkSD
 		WebBrowser tmpPrint = new WebBrowser();
 		string fileName = "";
 		string fileContent = "";
+		RegistryMonitor colorStyle = new RegistryMonitor(RegistryHive.CurrentUser, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize");
+		int colorStyleEx = (Int32)Registry.CurrentUser
+			 .OpenSubKey("Software")
+	         .OpenSubKey("Microsoft")
+	         .OpenSubKey("Windows")
+	         .OpenSubKey("CurrentVersion")
+	         .OpenSubKey("Themes")
+	         .OpenSubKey("Personalize")
+			.GetValue("AppsUseLightTheme");
 		
 		public Form1()
 		{
@@ -74,7 +85,7 @@ namespace MiniblinkSD
     <script src=""dist/index.min.js""></script>
   </head>
 
-  <body>
+  <body style=""background-color: " + (colorStyleEx == 1 ? "white" : "#222233") + @";"">
     <div id=""vditor"" class=""vditor"" style=""margin-top: 30px;""></div>
   </body>
 </html>
@@ -89,6 +100,7 @@ namespace MiniblinkSD
       resize: {
 	  	enable: true
 	  },
+	  theme: """ + (colorStyleEx == 1 ? "classic" : "dark") + @""",
 	  toolbar: [""emoji"",""headings"",""bold"",""italic"",""strike"",""link"",""|"",""list"",""ordered-list"",""check"",""outdent"",""indent"",""|"",""quote"",""line"",""code"",""inline-code"",""insert-before"",""insert-after"",""table"",""|"",""undo"",""redo"",""|"",""edit-mode"",{
                 name: ""more"",
                 toolbar: [
@@ -119,6 +131,7 @@ namespace MiniblinkSD
       value: `" + (this.fileName != "" ? this.fileContent.Replace("\\", "\\\\").Replace("`", "\\`") : "") + @"`,
       after: function() {
       	initContent = window.vditor.getValue();
+      	document.getElementById('vditorContentTheme').href='dist/css/content-theme/" + (colorStyleEx == 1 ? "light" : "dark") + @".css';
       }
     });
   };
@@ -140,6 +153,7 @@ namespace MiniblinkSD
 			Icon icon = (Icon)(resources.GetObject("open"));
 			icon.Save(mStream);
 			btnOpen.Image = Image.FromStream(mStream);
+			btnOpen.BackColor = colorStyleEx == 1 ? SystemColors.Control : SystemColors.ControlDarkDark;
 			btnOpen.SetBounds(0,0,30,30);
 			btnOpen.Click += this.btnOpenClick;
 			this.Controls.Add(btnOpen);
@@ -152,6 +166,7 @@ namespace MiniblinkSD
 			icon = (Icon)(resources.GetObject("save"));
 			icon.Save(mStream);
 			btnSave.Image = Image.FromStream(mStream);
+			btnSave.BackColor = colorStyleEx == 1 ? SystemColors.Control : SystemColors.ControlDarkDark;
 			btnSave.SetBounds(30,0,30,30);
 			btnSave.Click += this.btnSaveClick;
 			this.Controls.Add(btnSave);
@@ -164,6 +179,7 @@ namespace MiniblinkSD
 			icon = (Icon)(resources.GetObject("saveAs"));
 			icon.Save(mStream);
 			btnSaveAs.Image = Image.FromStream(mStream);
+			btnSaveAs.BackColor = colorStyleEx == 1 ? SystemColors.Control : SystemColors.ControlDarkDark;
 			btnSaveAs.SetBounds(60,0,30,30);
 			btnSaveAs.Click += this.btnSaveAsClick;
 			this.Controls.Add(btnSaveAs);
@@ -176,18 +192,35 @@ namespace MiniblinkSD
 			icon = (Icon)(resources.GetObject("print"));
 			icon.Save(mStream);
 			btnPrint.Image = Image.FromStream(mStream);
+			btnPrint.BackColor = colorStyleEx == 1 ? SystemColors.Control : SystemColors.ControlDarkDark;
 			btnPrint.SetBounds(90,0,30,30);
 			btnPrint.Click += this.btnPrintClick;
 			this.Controls.Add(btnPrint);
 			this.Controls.SetChildIndex(btnPrint, 0);
+			
+			Button btnSwitch = new Button();
+			t.SetToolTip(btnSwitch, "Switch Color Theme of Dark/Light");
+			mStream = new MemoryStream();
+			icon = (Icon)(resources.GetObject(colorStyleEx == 1 ? "light" : "dark"));
+			icon.Save(mStream);
+			btnSwitch.Image = Image.FromStream(mStream);
+			btnSwitch.BackColor = colorStyleEx == 1 ? SystemColors.Control : SystemColors.ControlDarkDark;
+			btnSwitch.SetBounds(120,0,30,30);
+			btnSwitch.Click += this.switchTheme;
+			this.Controls.Add(btnSwitch);
+			this.Controls.SetChildIndex(btnSwitch, 0);
 
 			Label version = new Label();
 			version.Text = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
-			version.SetBounds(130, 7, 200, 15);
-			version.BackColor = Color.White;
+			version.SetBounds(160, 7, 200, 15);
+			version.BackColor = colorStyleEx == 1 ? Color.White : Color.FromArgb(0x22, 0x22, 0x33);
 			version.ForeColor = Color.Gray;
 			this.Controls.Add(version);
 			this.Controls.SetChildIndex(version, 0);
+			
+			colorStyle.RegChanged += colorStyle_RegChanged;
+			// TODO monitor system color scheme
+			// colorStyle.Start();
 		}
 		
 		void Form1ResizeBegin(object sender, EventArgs e)
@@ -255,7 +288,7 @@ namespace MiniblinkSD
     <script src=""dist/index.min.js""></script>
   </head>
 
-  <body>
+  <body style=""background-color: " + (colorStyleEx == 1 ? "white" : "#222233") + @";"">
     <div id=""vditor"" class=""vditor"" style=""margin-top: 30px;""></div>
   </body>
 </html>
@@ -270,6 +303,7 @@ namespace MiniblinkSD
       resize: {
 	  	enable: true
 	  },
+	  theme: """ + (colorStyleEx == 1 ? "classic" : "dark") + @""",
 	  toolbar: [""emoji"",""headings"",""bold"",""italic"",""strike"",""link"",""|"",""list"",""ordered-list"",""check"",""outdent"",""indent"",""|"",""quote"",""line"",""code"",""inline-code"",""insert-before"",""insert-after"",""table"",""|"",""undo"",""redo"",""|"",""edit-mode"",{
                 name: ""more"",
                 toolbar: [
@@ -300,6 +334,7 @@ namespace MiniblinkSD
       value: `" + (this.fileName != "" ? this.fileContent.Replace("\\", "\\\\").Replace("`", "\\`") : "") + @"`,
       after: function() {
       	initContent = window.vditor.getValue();
+      	document.getElementById('vditorContentTheme').href='dist/css/content-theme/" + (colorStyleEx == 1 ? "light" : "dark") + @".css';
       }
     });
   };
@@ -382,6 +417,75 @@ namespace MiniblinkSD
 		void tmpPrint_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
 		{
 			tmpPrint.ShowPrintDialog();
+		}
+
+		void colorStyle_RegChanged(object sender, EventArgs e)
+		{
+			int colorStyleExNew = (Int32)Registry.CurrentUser
+			 .OpenSubKey("Software")
+	         .OpenSubKey("Microsoft")
+	         .OpenSubKey("Windows")
+	         .OpenSubKey("CurrentVersion")
+	         .OpenSubKey("Themes")
+	         .OpenSubKey("Personalize")
+			 .GetValue("AppsUseLightTheme");
+			if (colorStyleExNew != colorStyleEx) {
+				switch (colorStyleExNew) {
+					case 0: // dark
+						// miniblink does not support cross thread calling interfaces
+						// browser.RunJs("window.editor.setTheme('dark');");
+						break;
+					case 1: // light
+						// browser.RunJs("window.editor.setTheme('classic');");
+						break;
+					default:
+						break;
+				}
+				// colorStyleEx = colorStyleExNew;
+			}
+		}
+
+		void switchTheme(object sender, EventArgs e)
+		{
+			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
+			MemoryStream mStream = new MemoryStream();
+			Icon icon = (Icon)(resources.GetObject("dark"));
+			switch (colorStyleEx) {
+				case 1: // light to dark
+					this.Controls[1].BackColor = SystemColors.ControlDarkDark;
+					mStream = new MemoryStream();
+					icon = (Icon)(resources.GetObject("dark"));
+					icon.Save(mStream);
+					((Button)this.Controls[1]).Image = Image.FromStream(mStream);
+					this.Controls[2].BackColor = SystemColors.ControlDarkDark;
+					this.Controls[3].BackColor = SystemColors.ControlDarkDark;
+					this.Controls[4].BackColor = SystemColors.ControlDarkDark;
+					this.Controls[5].BackColor = SystemColors.ControlDarkDark;
+					this.Controls[0].BackColor = Color.FromArgb(0x22, 0x22, 0x33);
+					browser.RunJs("window.vditor.setTheme('dark');");
+					browser.RunJs("document.getElementById('vditorContentTheme').href='dist/css/content-theme/dark.css';");
+					browser.RunJs("document.body.style.backgroundColor='#222233';");
+					this.colorStyleEx = 0;
+					break;
+				case 0: // dark to light
+					this.Controls[1].BackColor = SystemColors.Control;
+					mStream = new MemoryStream();
+					icon = (Icon)(resources.GetObject("light"));
+					icon.Save(mStream);
+					((Button)this.Controls[1]).Image = Image.FromStream(mStream);
+					this.Controls[2].BackColor = SystemColors.Control;
+					this.Controls[3].BackColor = SystemColors.Control;
+					this.Controls[4].BackColor = SystemColors.Control;
+					this.Controls[5].BackColor = SystemColors.Control;
+					this.Controls[0].BackColor = Color.White;
+					browser.RunJs("window.vditor.setTheme('classic');");
+					browser.RunJs("document.getElementById('vditorContentTheme').href='dist/css/content-theme/light.css';");
+					browser.RunJs("document.body.style.backgroundColor='white';");
+					this.colorStyleEx = 1;
+					break;
+				default:
+					break;
+			}
 		}
 	}
 }
