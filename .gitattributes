@@ -1,0 +1,4 @@
+MiniblinkSD/bin/Debug/dist/** linguist-vendored
+MiniblinkSD/bin/Debug/front_end/** linguist-vendored
+MiniblinkSD/bin/Release/dist/** linguist-vendored
+MiniblinkSD/bin/Release/front_end/** linguist-vendored
