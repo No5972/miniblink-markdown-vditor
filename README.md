@@ -7,3 +7,5 @@ We want a lightweight desktop markdown editor. But nearly all the installation p
 This app also adopted this editor engine of [Vditor](https://github.com/Vanessa219/vditor), which can make us conveniently build markdown editors in pure JavaScript.
 
 The compressed archive of this editor is of only 20 megabytes. The folder decompressed is of 53 megabytes.
+
+![](https://img-blog.csdnimg.cn/b799fc3aad9f4388b1934be6cc4023f9.png)
