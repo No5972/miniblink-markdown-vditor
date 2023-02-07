@@ -58,7 +58,7 @@ namespace MiniblinkSD
 			this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
 			this.Name = "Form1";
 			this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-			this.Text = "Miniblink Markdown Editor";
+			this.Text = "Miniblink Markdown Vditor";
 			this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1FormClosing);
 			this.Load += new System.EventHandler(this.Form1Load);
 			this.ResizeBegin += new System.EventHandler(this.Form1ResizeBegin);

@@ -8,4 +8,4 @@ This app also adopted this editor engine of [Vditor](https://github.com/Vanessa2
 
 The compressed archive of this version is of only 20 megabytes. The folder decompressed is of 53 megabytes.
 
-![](https://img-blog.csdnimg.cn/b799fc3aad9f4388b1934be6cc4023f9.png)
+![](https://img-blog.csdnimg.cn/b1a0eec150c544baabcd9810220f4af2.png)

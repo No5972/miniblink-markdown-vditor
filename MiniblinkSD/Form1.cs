@@ -13,6 +13,7 @@ using System.Drawing;
 using System.IO;
 using System.Threading;
 using System.Windows.Forms;
+// using Windows.UI.ViewManagement;
 using QQ2564874169.Miniblink;
 
 namespace MiniblinkSD
@@ -58,9 +59,9 @@ namespace MiniblinkSD
 			// browser.ShowDevTools();
 			// browser.LoadUri("https://www.runoob.com/try/try.php?filename=tryhtml_intro");
 			if (this.fileName != "") {
-				this.Text = this.fileName + " - Miniblink Markdown Editor";
+				this.Text = this.fileName + " - Miniblink Markdown Vditor";
 			} else {
-				this.Text = "untitled.md - Miniblink Markdown Editor";
+				this.Text = "untitled.md - Miniblink Markdown Vditor";
 			}
 			
 			browser.LoadHtml(@"
@@ -88,6 +89,22 @@ namespace MiniblinkSD
       resize: {
 	  	enable: true
 	  },
+	  toolbar: [""emoji"",""headings"",""bold"",""italic"",""strike"",""link"",""|"",""list"",""ordered-list"",""check"",""outdent"",""indent"",""|"",""quote"",""line"",""code"",""inline-code"",""insert-before"",""insert-after"",""table"",""|"",""undo"",""redo"",""|"",""edit-mode"",{
+                name: ""more"",
+                toolbar: [
+                    ""both"",
+                    ""code-theme"",
+                    ""content-theme"",
+                    ""outline"",
+                    ""preview"",
+                    ""devtools"",
+                    ""info"",
+                    ""help"",
+                ],
+            }],
+      counter: {
+      	enable: true
+      },
       preview: {
         theme: {
           path: ""dist/css/content-theme"",//关键
@@ -99,13 +116,13 @@ namespace MiniblinkSD
       cache: {
         enable: false,
       },
-      value: `" + (this.fileName != "" ? this.fileContent.Replace("`", "\\`") : "") + @"`,
+      value: `" + (this.fileName != "" ? this.fileContent.Replace("\\", "\\\\").Replace("`", "\\`") : "") + @"`,
       after: function() {
       	initContent = window.vditor.getValue();
       }
     });
   };
-  initVditor(""zh_CN"");
+  initVditor(""en_US"");
   window.setLang = (language) => {
     window.vditor.destroy();
     initVditor(language);
@@ -162,7 +179,15 @@ namespace MiniblinkSD
 			btnPrint.SetBounds(90,0,30,30);
 			btnPrint.Click += this.btnPrintClick;
 			this.Controls.Add(btnPrint);
-			this.Controls.SetChildIndex(btnPrint, 0); 
+			this.Controls.SetChildIndex(btnPrint, 0);
+
+			Label version = new Label();
+			version.Text = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
+			version.SetBounds(130, 7, 200, 15);
+			version.BackColor = Color.White;
+			version.ForeColor = Color.Gray;
+			this.Controls.Add(version);
+			this.Controls.SetChildIndex(version, 0);
 		}
 		
 		void Form1ResizeBegin(object sender, EventArgs e)
@@ -181,7 +206,7 @@ namespace MiniblinkSD
 			// MessageBox.Show(textOnInit.Length.ToString());
 			// MessageBox.Show((textOnExit == textOnInit).ToString());
 			if (textOnExit != textOnInit) {
-				DialogResult d = MessageBox.Show("Do you want to save your work? \n\nThere are unsaved changes in \"" + (this.fileName != "" ? this.fileName : "untitled.md") + "\".", "Miniblink Markdown Editor", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+				DialogResult d = MessageBox.Show("Do you want to save your work? \n\nThere are unsaved changes in \"" + (this.fileName != "" ? this.fileName : "untitled.md") + "\".", "Miniblink Markdown Vditor", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
 				if (d == DialogResult.Yes) {
 					if (this.fileName != "") {
 						// MessageBox.Show("Simulate overwritting");
@@ -219,7 +244,7 @@ namespace MiniblinkSD
 			  //获得文件路径
 			    this.fileName = ofd.FileName.ToString();
 			    this.fileContent = File.ReadAllText(this.fileName);
-			    this.Text = this.fileName + " - Miniblink Markdown Editor";
+			    this.Text = this.fileName + " - Miniblink Markdown Vditor";
 			    browser.LoadHtml(@"
 <!DOCTYPE html>
 <html lang=""en"">
@@ -245,6 +270,22 @@ namespace MiniblinkSD
       resize: {
 	  	enable: true
 	  },
+	  toolbar: [""emoji"",""headings"",""bold"",""italic"",""strike"",""link"",""|"",""list"",""ordered-list"",""check"",""outdent"",""indent"",""|"",""quote"",""line"",""code"",""inline-code"",""insert-before"",""insert-after"",""table"",""|"",""undo"",""redo"",""|"",""edit-mode"",{
+                name: ""more"",
+                toolbar: [
+                    ""both"",
+                    ""code-theme"",
+                    ""content-theme"",
+                    ""outline"",
+                    ""preview"",
+                    ""devtools"",
+                    ""info"",
+                    ""help"",
+                ],
+            }],
+      counter: {
+      	enable: true
+      },
       preview: {
         theme: {
           path: ""dist/css/content-theme"",//关键
@@ -256,13 +297,13 @@ namespace MiniblinkSD
       cache: {
         enable: false,
       },
-      value: `" + (this.fileName != "" ? this.fileContent.Replace("`", "\\`") : "") + @"`,
+      value: `" + (this.fileName != "" ? this.fileContent.Replace("\\", "\\\\").Replace("`", "\\`") : "") + @"`,
       after: function() {
       	initContent = window.vditor.getValue();
       }
     });
   };
-  initVditor(""zh_CN"");
+  initVditor(""en_US"");
   window.setLang = (language) => {
     window.vditor.destroy();
     initVditor(language);
