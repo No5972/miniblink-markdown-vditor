@@ -11,6 +11,7 @@
 using System;
 using System.Drawing;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
 using Microsoft.Win32;
@@ -29,6 +30,8 @@ namespace MiniblinkSD
 		WebBrowser tmpPrint = new WebBrowser();
 		string fileName = "";
 		string fileContent = "";
+		bool requireSwitch = false;
+		// UISettings uiSettings = new UISettings();
 		RegistryMonitor colorStyle = new RegistryMonitor(RegistryHive.CurrentUser, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize");
 		int colorStyleEx = (Int32)Registry.CurrentUser
 			 .OpenSubKey("Software")
@@ -66,6 +69,8 @@ namespace MiniblinkSD
 			browser.SetBounds(0,0,this.panel1.Width,this.panel1.Height);
 			browser.Dock = DockStyle.Fill;
 			browser.KeyDown += shortcutKeys;
+			browser.AllowDrop = true;
+			browser.DragOver += browser_DragOver;
 			browser.DragDrop += browser_DragDrop; // miniblink not implemented drag drop yet
 			// browser.ShowDevTools();
 			// browser.LoadUri("https://www.runoob.com/try/try.php?filename=tryhtml_intro");
@@ -220,7 +225,8 @@ namespace MiniblinkSD
 			
 			colorStyle.RegChanged += colorStyle_RegChanged;
 			// TODO monitor system color scheme
-			// colorStyle.Start();
+			colorStyle.Start();
+			this.Activated += checkTheme;
 		}
 		
 		void Form1ResizeBegin(object sender, EventArgs e)
@@ -251,11 +257,14 @@ namespace MiniblinkSD
 						sfd.DefaultExt = "md";
 						sfd.AddExtension = true;
 						sfd.RestoreDirectory = true;
+						sfd.Title = "Save";
 						DialogResult result = sfd.ShowDialog();
 						if (result == DialogResult.OK) {
 						  //获得文件路径
 						    String filePathOnSave = sfd.FileName.ToString();
 						    File.WriteAllText(filePathOnSave, textOnExit);
+						} else {
+							e.Cancel = true;
 						}
 					}
 				} else if (d == DialogResult.Cancel) {
@@ -274,11 +283,233 @@ namespace MiniblinkSD
 			ofd.RestoreDirectory = true;
 			DialogResult result = ofd.ShowDialog();
 			if (result == DialogResult.OK) {
+				openFile(ofd.FileName);
+			}
+		}
+				
+		void btnSaveClick(object sender, EventArgs e)
+		{
+			String textOnExit = (String) this.browser.RunJs("return window.vditor.getValue();");
+			if (this.fileName != "") {
+				// MessageBox.Show("Simulate overwritting");
+				File.WriteAllText(this.fileName, textOnExit);
+			} else {
+				SaveFileDialog sfd = new SaveFileDialog();
+				sfd.Filter = "Markdown Files (*.md)|*.md|All files(*.*)|*.*";
+				sfd.FileName = "untitled";
+				sfd.DefaultExt = "md";
+				sfd.AddExtension = true;
+				sfd.RestoreDirectory = true;
+				sfd.Title = "Save";
+				DialogResult result = sfd.ShowDialog();
+				if (result == DialogResult.OK) {
+				  //获得文件路径
+				    String filePathOnSave = sfd.FileName.ToString();
+				    File.WriteAllText(filePathOnSave, textOnExit);
+				}
+			}
+		}
+
+		void btnSaveAsClick(object sender, EventArgs e)
+		{
+			String textOnExit = (String) this.browser.RunJs("return window.vditor.getValue();");
+			SaveFileDialog sfd = new SaveFileDialog();
+			sfd.Filter = "Markdown Files (*.md)|*.md|All files(*.*)|*.*";
+			sfd.FileName = this.fileName != "" ? this.fileName.Substring(this.fileName.LastIndexOf("\\") + 1) : "untitled";
+			sfd.DefaultExt = "md";
+			sfd.AddExtension = true;
+			sfd.RestoreDirectory = true;
+			sfd.Title = "Save As";
+			DialogResult result = sfd.ShowDialog();
+			if (result == DialogResult.OK) {
 			  //获得文件路径
-			    this.fileName = ofd.FileName.ToString();
-			    this.fileContent = File.ReadAllText(this.fileName);
-			    this.Text = this.fileName + " - Miniblink Markdown Vditor";
-			    browser.LoadHtml(@"
+			    String filePathOnSave = sfd.FileName.ToString();
+			    File.WriteAllText(filePathOnSave, textOnExit);
+			}
+		}
+		
+		void shortcutKeys(object sender, KeyEventArgs e) {
+			if (e.Control && e.KeyCode == Keys.O) {
+				this.btnOpenClick(sender, e);
+			}
+			if (e.Control && e.KeyCode == Keys.S) {
+				this.btnSaveClick(sender, e);
+			}
+			if (e.Control && e.Shift && e.KeyCode == Keys.S) {
+				this.btnSaveAsClick(sender, e);
+			}
+			if (e.Control && e.KeyCode == Keys.P) {
+				this.btnPrintClick(sender, e);
+			}
+		}
+
+		void browser_DragDrop(object sender, DragEventArgs e)
+		{
+			string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+			if ((files.Length == 1 && files[0] == fileName) || files.Length > 1) {
+				return;
+			} else {
+				String textOnExit = (String) this.browser.RunJs("return window.vditor.getValue();");
+				String textOnInit = (String) this.browser.RunJs("return initContent;");
+				// MessageBox.Show(textOnExit.Length.ToString());
+				// MessageBox.Show(textOnInit.Length.ToString());
+				// MessageBox.Show((textOnExit == textOnInit).ToString());
+				if (textOnExit != textOnInit) {
+					DialogResult d = MessageBox.Show("Do you want to save your work? \n\nThere are unsaved changes in \"" + (this.fileName != "" ? this.fileName : "untitled.md") + "\".", "Miniblink Markdown Vditor", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+					if (d == DialogResult.Yes) {
+						if (this.fileName != "") {
+							// MessageBox.Show("Simulate overwritting");
+							File.WriteAllText(this.fileName, textOnExit);
+						} else {
+							SaveFileDialog sfd = new SaveFileDialog();
+							sfd.Filter = "Markdown Files (*.md)|*.md|All files(*.*)|*.*";
+							sfd.FileName = "untitled";
+							sfd.DefaultExt = "md";
+							sfd.AddExtension = true;
+							sfd.RestoreDirectory = true;
+							sfd.Title = "Save";
+							DialogResult result = sfd.ShowDialog();
+							if (result == DialogResult.OK) {
+							  //获得文件路径
+							    String filePathOnSave = sfd.FileName.ToString();
+							    File.WriteAllText(filePathOnSave, textOnExit);
+							} else {
+								return;
+							}
+						}
+					} else if (d == DialogResult.Cancel) {
+						return;
+					}
+				}
+			}
+			if (files.Length == 1 && Path.GetExtension(files[0]).ToLower() == ".md") {
+				openFile(files[0]);
+			}
+		}
+
+		void browser_DragOver(object sender, DragEventArgs e)
+		{
+			string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+			if (files.Length > 1) {
+				e.Effect = DragDropEffects.None;
+				return;
+			}
+			if (e.Data.GetDataPresent(DataFormats.FileDrop) && Path.GetExtension(files[0]).ToLower() == ".md")
+		    {
+		        e.Effect = DragDropEffects.Copy;
+			} else {
+				e.Effect = DragDropEffects.None;
+			}
+		}
+		void btnPrintClick(object sender, EventArgs e)
+		{
+			String html = (String) this.browser.RunJs("return window.vditor.getHTML();");
+			tmpPrint.DocumentText = html;
+			tmpPrint.DocumentCompleted += tmpPrint_DocumentCompleted;
+		}
+
+		void tmpPrint_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
+		{
+			tmpPrint.ShowPrintDialog();
+		}
+
+		void colorStyle_RegChanged(object sender, EventArgs e)
+		{
+			int colorStyleExNew = (Int32)Registry.CurrentUser
+			 .OpenSubKey("Software")
+	         .OpenSubKey("Microsoft")
+	         .OpenSubKey("Windows")
+	         .OpenSubKey("CurrentVersion")
+	         .OpenSubKey("Themes")
+	         .OpenSubKey("Personalize")
+			 .GetValue("AppsUseLightTheme");
+			if (colorStyleExNew != colorStyleEx) {
+				requireSwitch = true;
+				switch (colorStyleExNew) {
+					case 0: // dark
+						// miniblink does not support cross thread calling interfaces
+						// browser.RunJs("window.editor.setTheme('dark');");
+						break;
+					case 1: // light
+						// browser.RunJs("window.editor.setTheme('classic');");
+						break;
+					default:
+						break;
+				}
+				// colorStyleEx = colorStyleExNew;
+			}
+		}
+
+		void switchTheme(object sender, EventArgs e)
+		{
+			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
+			MemoryStream mStream = new MemoryStream();
+			Icon icon = (Icon)(resources.GetObject("dark"));
+			switch (colorStyleEx) {
+				case 1: // light to dark
+					this.Controls[1].BackColor = SystemColors.ControlDarkDark;
+					mStream = new MemoryStream();
+					icon = (Icon)(resources.GetObject("dark"));
+					icon.Save(mStream);
+					((Button)this.Controls[1]).Image = Image.FromStream(mStream);
+					this.Controls[2].BackColor = SystemColors.ControlDarkDark;
+					this.Controls[3].BackColor = SystemColors.ControlDarkDark;
+					this.Controls[4].BackColor = SystemColors.ControlDarkDark;
+					this.Controls[5].BackColor = SystemColors.ControlDarkDark;
+					this.Controls[0].BackColor = Color.FromArgb(0x22, 0x22, 0x33);
+					browser.RunJs("window.vditor.setTheme('dark');");
+					browser.RunJs("document.getElementById('vditorContentTheme').href='dist/css/content-theme/dark.css';");
+					browser.RunJs("document.body.style.backgroundColor='#222233';");
+					this.colorStyleEx = 0;
+					break;
+				case 0: // dark to light
+					this.Controls[1].BackColor = SystemColors.Control;
+					mStream = new MemoryStream();
+					icon = (Icon)(resources.GetObject("light"));
+					icon.Save(mStream);
+					((Button)this.Controls[1]).Image = Image.FromStream(mStream);
+					this.Controls[2].BackColor = SystemColors.Control;
+					this.Controls[3].BackColor = SystemColors.Control;
+					this.Controls[4].BackColor = SystemColors.Control;
+					this.Controls[5].BackColor = SystemColors.Control;
+					this.Controls[0].BackColor = Color.White;
+					browser.RunJs("window.vditor.setTheme('classic');");
+					browser.RunJs("document.getElementById('vditorContentTheme').href='dist/css/content-theme/light.css';");
+					browser.RunJs("document.body.style.backgroundColor='white';");
+					this.colorStyleEx = 1;
+					break;
+				default:
+					break;
+			}
+		}
+
+		void checkTheme(object sender, EventArgs e)
+		{
+			// MessageBox.Show("theme changing");
+			if (requireSwitch) {
+				requireSwitch = false;
+				int colorStyleExNew = (Int32)Registry.CurrentUser
+				 .OpenSubKey("Software")
+		         .OpenSubKey("Microsoft")
+		         .OpenSubKey("Windows")
+		         .OpenSubKey("CurrentVersion")
+		         .OpenSubKey("Themes")
+		         .OpenSubKey("Personalize")
+				 .GetValue("AppsUseLightTheme");
+				if (colorStyleExNew != colorStyleEx) {
+					requireSwitch = true;
+					switchTheme(sender, e);
+					colorStyleEx = colorStyleExNew;
+				}
+			}
+		}
+		
+		void openFile(String fileNameToOpen) {
+			//获得文件路径
+		    this.fileName = fileNameToOpen;
+		    this.fileContent = File.ReadAllText(this.fileName);
+		    this.Text = this.fileName + " - Miniblink Markdown Vditor";
+		    browser.LoadHtml(@"
 <!DOCTYPE html>
 <html lang=""en"">
   <head>
@@ -345,147 +576,6 @@ namespace MiniblinkSD
   };
 </script>
 ");
-			}
-		}
-				
-		void btnSaveClick(object sender, EventArgs e)
-		{
-			String textOnExit = (String) this.browser.RunJs("return window.vditor.getValue();");
-			if (this.fileName != "") {
-				// MessageBox.Show("Simulate overwritting");
-				File.WriteAllText(this.fileName, textOnExit);
-			} else {
-				SaveFileDialog sfd = new SaveFileDialog();
-				sfd.Filter = "Markdown Files (*.md)|*.md|All files(*.*)|*.*";
-				sfd.FileName = "untitled";
-				sfd.DefaultExt = "md";
-				sfd.AddExtension = true;
-				sfd.RestoreDirectory = true;
-				DialogResult result = sfd.ShowDialog();
-				if (result == DialogResult.OK) {
-				  //获得文件路径
-				    String filePathOnSave = sfd.FileName.ToString();
-				    File.WriteAllText(filePathOnSave, textOnExit);
-				}
-			}
-		}
-
-		void btnSaveAsClick(object sender, EventArgs e)
-		{
-			String textOnExit = (String) this.browser.RunJs("return window.vditor.getValue();");
-			SaveFileDialog sfd = new SaveFileDialog();
-			sfd.Filter = "Markdown Files (*.md)|*.md|All files(*.*)|*.*";
-			sfd.FileName = this.fileName != "" ? this.fileName.Substring(this.fileName.LastIndexOf("\\") + 1) : "untitled";
-			sfd.DefaultExt = "md";
-			sfd.AddExtension = true;
-			sfd.RestoreDirectory = true;
-			DialogResult result = sfd.ShowDialog();
-			if (result == DialogResult.OK) {
-			  //获得文件路径
-			    String filePathOnSave = sfd.FileName.ToString();
-			    File.WriteAllText(filePathOnSave, textOnExit);
-			}
-		}
-		
-		void shortcutKeys(object sender, KeyEventArgs e) {
-			if (e.Control && e.KeyCode == Keys.O) {
-				this.btnOpenClick(sender, e);
-			}
-			if (e.Control && e.KeyCode == Keys.S) {
-				this.btnSaveClick(sender, e);
-			}
-			if (e.Control && e.Shift && e.KeyCode == Keys.S) {
-				this.btnSaveAsClick(sender, e);
-			}
-			if (e.Control && e.KeyCode == Keys.P) {
-				this.btnPrintClick(sender, e);
-			}
-		}
-
-		void browser_DragDrop(object sender, DragEventArgs e)
-		{
-			throw new NotImplementedException();
-		}
-
-		void btnPrintClick(object sender, EventArgs e)
-		{
-			String html = (String) this.browser.RunJs("return window.vditor.getHTML();");
-			tmpPrint.DocumentText = html;
-			tmpPrint.DocumentCompleted += tmpPrint_DocumentCompleted;
-		}
-
-		void tmpPrint_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
-		{
-			tmpPrint.ShowPrintDialog();
-		}
-
-		void colorStyle_RegChanged(object sender, EventArgs e)
-		{
-			int colorStyleExNew = (Int32)Registry.CurrentUser
-			 .OpenSubKey("Software")
-	         .OpenSubKey("Microsoft")
-	         .OpenSubKey("Windows")
-	         .OpenSubKey("CurrentVersion")
-	         .OpenSubKey("Themes")
-	         .OpenSubKey("Personalize")
-			 .GetValue("AppsUseLightTheme");
-			if (colorStyleExNew != colorStyleEx) {
-				switch (colorStyleExNew) {
-					case 0: // dark
-						// miniblink does not support cross thread calling interfaces
-						// browser.RunJs("window.editor.setTheme('dark');");
-						break;
-					case 1: // light
-						// browser.RunJs("window.editor.setTheme('classic');");
-						break;
-					default:
-						break;
-				}
-				// colorStyleEx = colorStyleExNew;
-			}
-		}
-
-		void switchTheme(object sender, EventArgs e)
-		{
-			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
-			MemoryStream mStream = new MemoryStream();
-			Icon icon = (Icon)(resources.GetObject("dark"));
-			switch (colorStyleEx) {
-				case 1: // light to dark
-					this.Controls[1].BackColor = SystemColors.ControlDarkDark;
-					mStream = new MemoryStream();
-					icon = (Icon)(resources.GetObject("dark"));
-					icon.Save(mStream);
-					((Button)this.Controls[1]).Image = Image.FromStream(mStream);
-					this.Controls[2].BackColor = SystemColors.ControlDarkDark;
-					this.Controls[3].BackColor = SystemColors.ControlDarkDark;
-					this.Controls[4].BackColor = SystemColors.ControlDarkDark;
-					this.Controls[5].BackColor = SystemColors.ControlDarkDark;
-					this.Controls[0].BackColor = Color.FromArgb(0x22, 0x22, 0x33);
-					browser.RunJs("window.vditor.setTheme('dark');");
-					browser.RunJs("document.getElementById('vditorContentTheme').href='dist/css/content-theme/dark.css';");
-					browser.RunJs("document.body.style.backgroundColor='#222233';");
-					this.colorStyleEx = 0;
-					break;
-				case 0: // dark to light
-					this.Controls[1].BackColor = SystemColors.Control;
-					mStream = new MemoryStream();
-					icon = (Icon)(resources.GetObject("light"));
-					icon.Save(mStream);
-					((Button)this.Controls[1]).Image = Image.FromStream(mStream);
-					this.Controls[2].BackColor = SystemColors.Control;
-					this.Controls[3].BackColor = SystemColors.Control;
-					this.Controls[4].BackColor = SystemColors.Control;
-					this.Controls[5].BackColor = SystemColors.Control;
-					this.Controls[0].BackColor = Color.White;
-					browser.RunJs("window.vditor.setTheme('classic');");
-					browser.RunJs("document.getElementById('vditorContentTheme').href='dist/css/content-theme/light.css';");
-					browser.RunJs("document.body.style.backgroundColor='white';");
-					this.colorStyleEx = 1;
-					break;
-				default:
-					break;
-			}
 		}
 	}
 }
